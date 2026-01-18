@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant
+    ports:
+      - "6333:6333" 
+    volumes:
+      - qdrant_data:/qdrant/storage  
+
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    environment:
+      POSTGRES_USER: phlox
+      POSTGRES_PASSWORD: Pa55word123@@@
+      POSTGRES_DB: phlox_db
+    ports:
+      - "5432:5432"  
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  
+volumes:
+  qdrant_data:
+    driver: local
+  postgres_data:
+    driver: local
