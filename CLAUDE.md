@@ -20,6 +20,7 @@ The AI Assistant application consists of several key components:
 - **Database**: Utilizing SQL for storing user data and information necessary for the effective functioning of the AI Assistant.
 - **Qdrant**: A vector storage system enabling fast and efficient information retrieval based on vector-formatted data.
 - **OpenAI**: A language model responsible for processing and generating responses to user queries.
+- **Keycloak**: A serivce to auth based on oAuth2.
 
 ## Frontend
 User interaction with the AI Assistant occurs through an interface created in React. The frontend provides a user-friendly and intuitive way to search for information and use the features of the AI Assistant.
