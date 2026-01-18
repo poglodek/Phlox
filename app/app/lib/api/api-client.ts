@@ -1,8 +1,14 @@
 import { apiBaseUrl } from "~/config/auth.config";
-import { getAccessToken } from "~/lib/auth/user-manager.client";
+import { getStoredToken } from "~/lib/auth/token-storage";
+import type { AuthResponse, LoginRequest, RegisterRequest, User } from "~/lib/auth/types";
 
 interface RequestOptions extends RequestInit {
   skipAuth?: boolean;
+}
+
+interface ApiError {
+  message: string;
+  status: number;
 }
 
 async function request<T>(
@@ -17,7 +23,7 @@ async function request<T>(
   };
 
   if (!skipAuth) {
-    const token = await getAccessToken();
+    const token = getStoredToken();
     if (token) {
       (headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
     }
@@ -29,10 +35,21 @@ async function request<T>(
   });
 
   if (!response.ok) {
-    if (response.status === 401) {
-      throw new Error("Unauthorized");
+    let message = `API error: ${response.status} ${response.statusText}`;
+    try {
+      const errorBody = await response.json();
+      if (errorBody.message) {
+        message = errorBody.message;
+      }
+    } catch {
+      // Ignore JSON parsing errors
     }
-    throw new Error(`API error: ${response.status} ${response.statusText}`);
+
+    const error: ApiError = {
+      message,
+      status: response.status,
+    };
+    throw error;
   }
 
   if (response.status === 204) {
@@ -64,18 +81,23 @@ export const apiClient = {
     request<T>(endpoint, { ...options, method: "DELETE" }),
 };
 
-export interface UserInfo {
-  id: string;
-  keycloakId: string;
-  email: string | null;
-  name: string | null;
-  preferredUsername: string | null;
-  roles: string[];
-  createdAt: string;
-  lastLoginAt: string | null;
-  isActive: boolean;
-}
+export const authApi = {
+  login: (data: LoginRequest) =>
+    apiClient.post<AuthResponse>("/api/auth/login", data, { skipAuth: true }),
+
+  register: (data: RegisterRequest) =>
+    apiClient.post<AuthResponse>("/api/auth/register", data, { skipAuth: true }),
+};
 
 export const userApi = {
-  getCurrentUser: () => apiClient.get<UserInfo>("/api/user/me"),
+  getCurrentUser: () => apiClient.get<User>("/api/user/me"),
 };
+
+export function isApiError(error: unknown): error is ApiError {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    "status" in error
+  );
+}

@@ -6,7 +6,8 @@
       "Bash(npm install:*)",
       "Bash(dotnet build:*)",
       "Bash(npm run typecheck:*)",
-      "Bash(dotnet ef migrations:*)"
+      "Bash(dotnet ef migrations:*)",
+      "Bash(dotnet restore:*)"
     ]
   }
 }

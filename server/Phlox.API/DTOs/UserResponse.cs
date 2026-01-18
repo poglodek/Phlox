@@ -1,20 +1,12 @@
-namespace Phlox.API.Entities;
+namespace Phlox.API.DTOs;
 
-public class UserEntity
+public class UserResponse
 {
     public Guid Id { get; set; }
-
     public required string Email { get; set; }
-
     public required string Username { get; set; }
-
-    public required string PasswordHash { get; set; }
-
     public string? Name { get; set; }
-
     public DateTime CreatedAt { get; set; }
-
     public DateTime? LastLoginAt { get; set; }
-
-    public bool IsActive { get; set; } = true;
+    public bool IsActive { get; set; }
 }

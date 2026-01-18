@@ -20,22 +20,25 @@ public class ApplicationDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
 
-            entity.HasIndex(e => e.KeycloakId)
+            entity.HasIndex(e => e.Email)
                 .IsUnique();
 
-            entity.HasIndex(e => e.Email);
+            entity.HasIndex(e => e.Username)
+                .IsUnique();
 
-            entity.Property(e => e.KeycloakId)
+            entity.Property(e => e.Email)
                 .IsRequired()
                 .HasMaxLength(255);
 
-            entity.Property(e => e.Email)
+            entity.Property(e => e.Username)
+                .IsRequired()
+                .HasMaxLength(255);
+
+            entity.Property(e => e.PasswordHash)
+                .IsRequired()
                 .HasMaxLength(255);
 
             entity.Property(e => e.Name)
-                .HasMaxLength(255);
-
-            entity.Property(e => e.PreferredUsername)
                 .HasMaxLength(255);
         });
     }

@@ -8,7 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
 builder.Services.AddControllers();
-builder.Services.AddKeycloakAuthentication(builder.Configuration);
+builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddPhloxCors(builder.Configuration);
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -31,4 +31,3 @@ app.UseAuthorization();
 app.MapControllers();
 
 await app.RunAsync();
-

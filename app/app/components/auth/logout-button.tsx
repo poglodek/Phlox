@@ -6,14 +6,10 @@ interface LogoutButtonProps {
 }
 
 export function LogoutButton({ className, children }: LogoutButtonProps) {
-  const { signOut, isLoading } = useAuth();
+  const { logout, isLoading } = useAuth();
 
-  const handleLogout = async () => {
-    try {
-      await signOut();
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
+  const handleLogout = () => {
+    logout();
   };
 
   return (

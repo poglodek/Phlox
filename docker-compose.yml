@@ -9,30 +9,12 @@ services:
     volumes:
       - qdrant_data:/qdrant/storage  
 
-  postgres:
-    image: postgres:latest
-    container_name: postgres
+  db:
+    image: postgres
+    restart: always
+    shm_size: 128mb
     environment:
-      POSTGRES_USER: phlox
-      POSTGRES_PASSWORD: Pa55word123@@@
-      POSTGRES_DB: phlox_db
-    ports:
-      - "5432:5432"  
-    volumes:
-      - postgres_data:/var/lib/postgresql/data  
-
-  keycloak:
-    image: quay.io/keycloak/keycloak:26.5.1
-    container_name: keycloak
-    ports:
-      - "127.0.0.1:8080:8080"  
-    environment:
-      KC_BOOTSTRAP_ADMIN_USERNAME: admin   
-      KC_BOOTSTRAP_ADMIN_PASSWORD: admin   
-    command: start-dev  
-
+      POSTGRES_PASSWORD: example
 volumes:
   qdrant_data:
-    driver: local
-  postgres_data:
     driver: local

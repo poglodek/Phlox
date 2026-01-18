@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { AuthGuard } from "~/components/auth/auth-guard";
 import { LogoutButton } from "~/components/auth/logout-button";
 import { useAuth } from "~/lib/auth/auth-context";
-import { userApi, type UserInfo } from "~/lib/api/api-client";
+import { userApi } from "~/lib/api/api-client";
+import type { User } from "~/lib/auth/types";
 
 export function meta() {
   return [{ title: "Dashboard - Phlox" }];
@@ -10,7 +11,7 @@ export function meta() {
 
 function DashboardContent() {
   const { user } = useAuth();
-  const [apiUser, setApiUser] = useState<UserInfo | null>(null);
+  const [apiUser, setApiUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,40 +45,30 @@ function DashboardContent() {
           <div className="grid gap-6 md:grid-cols-2">
             <div className="rounded-lg bg-white p-6 shadow">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                OIDC User Info
+                Session Info
               </h2>
               {user ? (
                 <dl className="space-y-2">
                   <div>
                     <dt className="text-sm font-medium text-gray-500">
-                      Subject
+                      User ID
                     </dt>
-                    <dd className="text-sm text-gray-900">
-                      {user.profile.sub}
-                    </dd>
+                    <dd className="text-sm text-gray-900">{user.id}</dd>
                   </div>
                   <div>
                     <dt className="text-sm font-medium text-gray-500">Email</dt>
-                    <dd className="text-sm text-gray-900">
-                      {user.profile.email ?? "N/A"}
-                    </dd>
+                    <dd className="text-sm text-gray-900">{user.email}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">
+                      Username
+                    </dt>
+                    <dd className="text-sm text-gray-900">{user.username}</dd>
                   </div>
                   <div>
                     <dt className="text-sm font-medium text-gray-500">Name</dt>
                     <dd className="text-sm text-gray-900">
-                      {user.profile.name ??
-                        user.profile.preferred_username ??
-                        "N/A"}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">
-                      Token Expires
-                    </dt>
-                    <dd className="text-sm text-gray-900">
-                      {user.expires_at
-                        ? new Date(user.expires_at * 1000).toLocaleString()
-                        : "N/A"}
+                      {user.name ?? "N/A"}
                     </dd>
                   </div>
                 </dl>
@@ -106,23 +97,21 @@ function DashboardContent() {
                     <dd className="text-sm text-gray-900">{apiUser.id}</dd>
                   </div>
                   <div>
-                    <dt className="text-sm font-medium text-gray-500">
-                      Keycloak ID
-                    </dt>
-                    <dd className="text-sm text-gray-900 truncate">
-                      {apiUser.keycloakId}
-                    </dd>
+                    <dt className="text-sm font-medium text-gray-500">Email</dt>
+                    <dd className="text-sm text-gray-900">{apiUser.email}</dd>
                   </div>
                   <div>
-                    <dt className="text-sm font-medium text-gray-500">Email</dt>
+                    <dt className="text-sm font-medium text-gray-500">
+                      Username
+                    </dt>
                     <dd className="text-sm text-gray-900">
-                      {apiUser.email ?? "N/A"}
+                      {apiUser.username}
                     </dd>
                   </div>
                   <div>
                     <dt className="text-sm font-medium text-gray-500">Name</dt>
                     <dd className="text-sm text-gray-900">
-                      {apiUser.name ?? apiUser.preferredUsername ?? "N/A"}
+                      {apiUser.name ?? "N/A"}
                     </dd>
                   </div>
                   <div>
@@ -151,14 +140,6 @@ function DashboardContent() {
                       ) : (
                         <span className="text-red-600">Inactive</span>
                       )}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">Roles</dt>
-                    <dd className="text-sm text-gray-900">
-                      {apiUser.roles.length > 0
-                        ? apiUser.roles.join(", ")
-                        : "None"}
                     </dd>
                   </div>
                 </dl>

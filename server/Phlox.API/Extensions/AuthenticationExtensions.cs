@@ -1,18 +1,22 @@
+using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Phlox.API.Configuration;
+using Phlox.API.Services;
 
 namespace Phlox.API.Extensions;
 
 public static class AuthenticationExtensions
 {
-    public static IServiceCollection AddKeycloakAuthentication(
+    public static IServiceCollection AddJwtAuthentication(
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var keycloakOptions = configuration
-            .GetSection(KeycloakOptions.SectionName)
-            .Get<KeycloakOptions>() ?? new KeycloakOptions();
+        var jwtOptions = configuration
+            .GetSection(JwtOptions.SectionName)
+            .Get<JwtOptions>() ?? throw new InvalidOperationException("JWT configuration is missing");
+
+        services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
 
         services.AddAuthentication(options =>
         {
@@ -21,22 +25,25 @@ public static class AuthenticationExtensions
         })
         .AddJwtBearer(options =>
         {
-            options.Authority = keycloakOptions.Authority;
-            options.Audience = keycloakOptions.Audience;
-            options.RequireHttpsMetadata = keycloakOptions.RequireHttpsMetadata;
-
             options.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuer = true,
-                ValidIssuer = keycloakOptions.ValidIssuer,
+                ValidIssuer = jwtOptions.Issuer,
                 ValidateAudience = true,
-                ValidAudience = keycloakOptions.Audience,
+                ValidAudience = jwtOptions.Audience,
                 ValidateLifetime = true,
-                ValidateIssuerSigningKey = true
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Secret)),
+                ClockSkew = TimeSpan.Zero
             };
         });
 
         services.AddAuthorization();
+
+        services.AddHttpContextAccessor();
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
+        services.AddScoped<ITokenService, JwtTokenService>();
 
         return services;
     }

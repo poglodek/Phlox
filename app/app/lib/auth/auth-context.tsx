@@ -3,17 +3,27 @@ import {
   useContext,
   useEffect,
   useState,
+  useCallback,
   type ReactNode,
 } from "react";
-import type { User } from "oidc-client-ts";
+import { authApi, userApi } from "~/lib/api/api-client";
+import {
+  getStoredToken,
+  getStoredUser,
+  setStoredToken,
+  setStoredUser,
+  clearAuthStorage,
+} from "./token-storage";
+import type { User, LoginRequest, RegisterRequest, AuthResponse } from "./types";
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  signIn: () => Promise<void>;
-  signOut: () => Promise<void>;
-  getAccessToken: () => Promise<string | null>;
+  login: (credentials: LoginRequest) => Promise<void>;
+  register: (data: RegisterRequest) => Promise<void>;
+  logout: () => void;
+  getAccessToken: () => string | null;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -35,76 +45,75 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    let mounted = true;
-
     const initAuth = async () => {
       if (typeof window === "undefined") {
+        setIsLoading(false);
         return;
       }
 
-      const { getUserManager } = await import("./user-manager.client");
-      const userManager = getUserManager();
+      const token = getStoredToken();
+      const storedUser = getStoredUser();
 
-      try {
-        const currentUser = await userManager.getUser();
-        if (mounted) {
+      if (token && storedUser) {
+        // Verify token is still valid by fetching current user
+        try {
+          const currentUser = await userApi.getCurrentUser();
           setUser(currentUser);
-          setIsLoading(false);
-        }
-      } catch (error) {
-        console.error("Failed to get user:", error);
-        if (mounted) {
-          setIsLoading(false);
+          setStoredUser(currentUser);
+        } catch {
+          // Token is invalid, clear storage
+          clearAuthStorage();
         }
       }
 
-      userManager.events.addUserLoaded((loadedUser) => {
-        if (mounted) {
-          setUser(loadedUser);
-        }
-      });
-
-      userManager.events.addUserUnloaded(() => {
-        if (mounted) {
-          setUser(null);
-        }
-      });
-
-      userManager.events.addSilentRenewError((error) => {
-        console.error("Silent renew error:", error);
-      });
+      setIsLoading(false);
     };
 
     initAuth();
-
-    return () => {
-      mounted = false;
-    };
   }, []);
 
-  const signIn = async () => {
-    const { signIn: signInFn } = await import("./user-manager.client");
-    await signInFn();
-  };
+  const handleAuthResponse = useCallback((response: AuthResponse) => {
+    const newUser: User = {
+      id: response.userId,
+      email: response.email,
+      username: response.username,
+      name: response.name,
+      createdAt: new Date().toISOString(),
+      lastLoginAt: new Date().toISOString(),
+      isActive: true,
+    };
 
-  const signOut = async () => {
-    const { signOut: signOutFn } = await import("./user-manager.client");
-    await signOutFn();
-  };
+    setStoredToken(response.token);
+    setStoredUser(newUser);
+    setUser(newUser);
+  }, []);
 
-  const getAccessToken = async () => {
-    const { getAccessToken: getTokenFn } = await import(
-      "./user-manager.client"
-    );
-    return getTokenFn();
-  };
+  const login = useCallback(async (credentials: LoginRequest) => {
+    const response = await authApi.login(credentials);
+    handleAuthResponse(response);
+  }, [handleAuthResponse]);
+
+  const register = useCallback(async (data: RegisterRequest) => {
+    const response = await authApi.register(data);
+    handleAuthResponse(response);
+  }, [handleAuthResponse]);
+
+  const logout = useCallback(() => {
+    clearAuthStorage();
+    setUser(null);
+  }, []);
+
+  const getAccessToken = useCallback(() => {
+    return getStoredToken();
+  }, []);
 
   const value: AuthContextType = {
     user,
     isLoading,
-    isAuthenticated: !!user && !user.expired,
-    signIn,
-    signOut,
+    isAuthenticated: !!user,
+    login,
+    register,
+    logout,
     getAccessToken,
   };
 
