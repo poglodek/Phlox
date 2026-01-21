@@ -8,13 +8,17 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
         <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.2" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.2">
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
           <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.2" />
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
+        <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.21.0" />
+        <PackageReference Include="Microsoft.ML.Tokenizers" Version="2.0.0" />
+        <PackageReference Include="Qdrant.Client" Version="1.16.1" />
         <PackageReference Include="Scalar.AspNetCore" Version="2.12.11" />
     </ItemGroup>
 

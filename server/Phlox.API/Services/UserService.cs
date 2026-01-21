@@ -15,87 +15,70 @@ public class UserService : IUserService
         _logger = logger;
     }
 
-    public async Task<UserEntity> GetOrCreateUserAsync(
-        string keycloakId,
-        string? email,
+    public async Task<UserEntity?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Users
+            .FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
+    }
+
+    public async Task<UserEntity?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Users
+            .FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
+    }
+
+    public async Task<UserEntity?> GetByUsernameAsync(string username, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Users
+            .FirstOrDefaultAsync(u => u.Username == username, cancellationToken);
+    }
+
+    public async Task<UserEntity?> GetByEmailOrUsernameAsync(string emailOrUsername, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Users
+            .FirstOrDefaultAsync(u => u.Email == emailOrUsername || u.Username == emailOrUsername, cancellationToken);
+    }
+
+    public async Task<bool> ExistsByEmailAsync(string email, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Users
+            .AnyAsync(u => u.Email == email, cancellationToken);
+    }
+
+    public async Task<bool> ExistsByUsernameAsync(string username, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.Users
+            .AnyAsync(u => u.Username == username, cancellationToken);
+    }
+
+    public async Task<UserEntity> CreateAsync(
+        string email,
+        string username,
+        string passwordHash,
         string? name,
-        string? preferredUsername,
         CancellationToken cancellationToken = default)
     {
-        var existingUser = await _dbContext.Users
-            .FirstOrDefaultAsync(u => u.KeycloakId == keycloakId, cancellationToken);
-
-        if (existingUser is not null)
-        {
-            // Update user info if changed
-            var updated = false;
-
-            if (existingUser.Email != email)
-            {
-                existingUser.Email = email;
-                updated = true;
-            }
-
-            if (existingUser.Name != name)
-            {
-                existingUser.Name = name;
-                updated = true;
-            }
-
-            if (existingUser.PreferredUsername != preferredUsername)
-            {
-                existingUser.PreferredUsername = preferredUsername;
-                updated = true;
-            }
-
-            existingUser.LastLoginAt = DateTime.UtcNow;
-
-            if (updated)
-            {
-                _logger.LogInformation(
-                    "Updated user info for KeycloakId: {KeycloakId}",
-                    keycloakId);
-            }
-
-            await _dbContext.SaveChangesAsync(cancellationToken);
-            return existingUser;
-        }
-
-        // Create new user
-        var newUser = new UserEntity
+        var user = new UserEntity
         {
             Id = Guid.NewGuid(),
-            KeycloakId = keycloakId,
             Email = email,
+            Username = username,
+            PasswordHash = passwordHash,
             Name = name,
-            PreferredUsername = preferredUsername,
             CreatedAt = DateTime.UtcNow,
             LastLoginAt = DateTime.UtcNow,
             IsActive = true
         };
 
-        _dbContext.Users.Add(newUser);
+        _dbContext.Users.Add(user);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation(
-            "Created new user with KeycloakId: {KeycloakId}, Email: {Email}",
-            keycloakId,
-            email);
+        _logger.LogInformation("Created new user with Email: {Email}, Username: {Username}", email, username);
 
-        return newUser;
+        return user;
     }
 
-    public async Task<UserEntity?> GetUserByKeycloakIdAsync(
-        string keycloakId,
-        CancellationToken cancellationToken = default)
-    {
-        return await _dbContext.Users
-            .FirstOrDefaultAsync(u => u.KeycloakId == keycloakId, cancellationToken);
-    }
-
-    public async Task UpdateLastLoginAsync(
-        Guid userId,
-        CancellationToken cancellationToken = default)
+    public async Task UpdateLastLoginAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         await _dbContext.Users
             .Where(u => u.Id == userId)

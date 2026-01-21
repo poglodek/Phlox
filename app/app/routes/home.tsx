@@ -34,10 +34,7 @@ export default function Home() {
               <div className="text-center">
                 <p className="text-sm text-gray-500">Signed in as</p>
                 <p className="font-medium text-gray-900">
-                  {user?.profile.name ??
-                    user?.profile.preferred_username ??
-                    user?.profile.email ??
-                    "User"}
+                  {user?.name ?? user?.username ?? user?.email ?? "User"}
                 </p>
               </div>
               <div className="flex flex-col gap-3">
@@ -55,7 +52,7 @@ export default function Home() {
               <p className="text-center text-gray-600">
                 Sign in to access the AI Assistant
               </p>
-              <LoginButton className="w-full rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" />
+              <LoginButton className="w-full rounded-md bg-blue-600 px-4 py-2 text-center text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" />
             </div>
           )}
         </div>

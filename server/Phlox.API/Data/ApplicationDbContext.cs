@@ -11,6 +11,8 @@ public class ApplicationDbContext : DbContext
     }
 
     public DbSet<UserEntity> Users => Set<UserEntity>();
+    public DbSet<DocumentEntity> Documents => Set<DocumentEntity>();
+    public DbSet<ParagraphEntity> Paragraphs => Set<ParagraphEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -20,23 +22,59 @@ public class ApplicationDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
 
-            entity.HasIndex(e => e.KeycloakId)
+            entity.HasIndex(e => e.Email)
                 .IsUnique();
 
-            entity.HasIndex(e => e.Email);
+            entity.HasIndex(e => e.Username)
+                .IsUnique();
 
-            entity.Property(e => e.KeycloakId)
+            entity.Property(e => e.Email)
                 .IsRequired()
                 .HasMaxLength(255);
 
-            entity.Property(e => e.Email)
+            entity.Property(e => e.Username)
+                .IsRequired()
+                .HasMaxLength(255);
+
+            entity.Property(e => e.PasswordHash)
+                .IsRequired()
                 .HasMaxLength(255);
 
             entity.Property(e => e.Name)
                 .HasMaxLength(255);
+        });
 
-            entity.Property(e => e.PreferredUsername)
-                .HasMaxLength(255);
+        modelBuilder.Entity<DocumentEntity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Title)
+                .IsRequired()
+                .HasMaxLength(500);
+
+            entity.Property(e => e.Content)
+                .IsRequired();
+
+            entity.Property(e => e.CreatedAt)
+                .IsRequired();
+
+            entity.HasMany(e => e.Paragraphs)
+                .WithOne(p => p.Document)
+                .HasForeignKey(p => p.DocumentId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ParagraphEntity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Content)
+                .IsRequired();
+
+            entity.Property(e => e.Index)
+                .IsRequired();
+
+            entity.HasIndex(e => new { e.DocumentId, e.Index });
         });
     }
 }
