@@ -19,11 +19,13 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.Configure<QdrantOptions>(builder.Configuration.GetSection(QdrantOptions.SectionName));
 builder.Services.Configure<EmbeddingOptions>(builder.Configuration.GetSection(EmbeddingOptions.SectionName));
 builder.Services.Configure<DocumentSlicerOptions>(builder.Configuration.GetSection(DocumentSlicerOptions.SectionName));
+builder.Services.Configure<OpenAiOptions>(builder.Configuration.GetSection(OpenAiOptions.SectionName));
 
 // Services
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddSingleton<IDocumentSlicerService, DocumentSlicerService>();
-builder.Services.AddSingleton<IEmbeddingService, EmbeddingService>();
+builder.Services.AddSingleton<IEmbeddingService, OpenAiEmbeddingService>();
+builder.Services.AddSingleton<IHtmlContentCleanerService, HtmlContentCleanerService>();
 builder.Services.AddScoped<IVectorService, VectorService>();
 
 var app = builder.Build();
@@ -32,6 +34,7 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
     app.MapScalarApiReference();
+    app.Services.GetService<ILoggerFactory>()!.CreateLogger<Program>().LogInformation("Go to https://localhost:7086/scalar to use web documentation!");
 }
 
 app.UseHttpsRedirection();

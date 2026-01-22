@@ -9,7 +9,11 @@
       "Bash(dotnet ef migrations:*)",
       "Bash(dotnet restore:*)",
       "WebSearch",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(dotnet new:*)",
+      "Bash(dotnet add reference:*)",
+      "Bash(del \"server\\\\Phlox.API.Tests\\\\UnitTest1.cs\")",
+      "Bash(dotnet test:*)"
     ]
   }
 }

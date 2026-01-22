@@ -11,6 +11,7 @@ public class VectorService : IVectorService
     private readonly QdrantClient _qdrantClient;
     private readonly IDocumentSlicerService _documentSlicer;
     private readonly IEmbeddingService _embeddingService;
+    private readonly IHtmlContentCleanerService _htmlCleaner;
     private readonly ILogger<VectorService> _logger;
     private readonly QdrantOptions _qdrantOptions;
 
@@ -18,11 +19,13 @@ public class VectorService : IVectorService
         IOptions<QdrantOptions> qdrantOptions,
         IDocumentSlicerService documentSlicer,
         IEmbeddingService embeddingService,
+        IHtmlContentCleanerService htmlCleaner,
         ILogger<VectorService> logger)
     {
         _qdrantOptions = qdrantOptions.Value;
         _documentSlicer = documentSlicer;
         _embeddingService = embeddingService;
+        _htmlCleaner = htmlCleaner;
         _logger = logger;
 
         _qdrantClient = new QdrantClient(
@@ -38,10 +41,27 @@ public class VectorService : IVectorService
 
         await EnsureCollectionExistsAsync(cancellationToken);
 
-        // Slice the document content into paragraphs using sat-3l-sm model
-        var paragraphTexts = _documentSlicer.SliceIntoParagraphs(document.Content);
+        // Clean HTML content and extract images
+        var cleaningResult = await _htmlCleaner.CleanHtmlAsync(document.Content, cancellationToken);
 
-        _logger.LogInformation("Document sliced into {ParagraphCount} paragraphs", paragraphTexts.Count);
+        _logger.LogInformation(
+            "HTML cleaning complete: {TextLength} chars of text, {ImageCount} images found",
+            cleaningResult.CleanedText.Length,
+            cleaningResult.ImageDescriptions.Count);
+
+        // Slice the cleaned text content into paragraphs using sat-3l-sm model
+        var paragraphTexts = _documentSlicer.SliceIntoParagraphs(cleaningResult.CleanedText);
+
+        // Add image descriptions as additional paragraphs
+        foreach (var imageDesc in cleaningResult.ImageDescriptions)
+        {
+            if (!string.IsNullOrWhiteSpace(imageDesc.Description))
+            {
+                paragraphTexts.Add($"[Image content: {imageDesc.Description}]");
+            }
+        }
+
+        _logger.LogInformation("Document processed into {ParagraphCount} paragraphs (including image descriptions)", paragraphTexts.Count);
 
         var points = new List<PointStruct>();
         var paragraphEntities = new List<ParagraphEntity>();
