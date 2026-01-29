@@ -22,6 +22,32 @@ namespace Phlox.API.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Phlox.API.Entities.ChatEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Title")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerId");
+
+                    b.ToTable("Chats");
+                });
+
             modelBuilder.Entity("Phlox.API.Entities.DocumentEntity", b =>
                 {
                     b.Property<Guid>("Id")
@@ -46,6 +72,34 @@ namespace Phlox.API.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Documents");
+                });
+
+            modelBuilder.Entity("Phlox.API.Entities.MessageEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ChatId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChatId", "CreatedAt");
+
+                    b.ToTable("Messages");
                 });
 
             modelBuilder.Entity("Phlox.API.Entities.ParagraphEntity", b =>
@@ -116,6 +170,28 @@ namespace Phlox.API.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("Phlox.API.Entities.ChatEntity", b =>
+                {
+                    b.HasOne("Phlox.API.Entities.UserEntity", "Owner")
+                        .WithMany()
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("Phlox.API.Entities.MessageEntity", b =>
+                {
+                    b.HasOne("Phlox.API.Entities.ChatEntity", "Chat")
+                        .WithMany("Messages")
+                        .HasForeignKey("ChatId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Chat");
+                });
+
             modelBuilder.Entity("Phlox.API.Entities.ParagraphEntity", b =>
                 {
                     b.HasOne("Phlox.API.Entities.DocumentEntity", "Document")
@@ -125,6 +201,11 @@ namespace Phlox.API.Migrations
                         .IsRequired();
 
                     b.Navigation("Document");
+                });
+
+            modelBuilder.Entity("Phlox.API.Entities.ChatEntity", b =>
+                {
+                    b.Navigation("Messages");
                 });
 
             modelBuilder.Entity("Phlox.API.Entities.DocumentEntity", b =>

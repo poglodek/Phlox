@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router";
 import { AuthGuard } from "~/components/auth/auth-guard";
 import { LogoutButton } from "~/components/auth/logout-button";
 import { useAuth } from "~/lib/auth/auth-context";
@@ -37,7 +38,15 @@ function DashboardContent() {
           <h1 className="text-3xl font-bold tracking-tight text-gray-900">
             Dashboard
           </h1>
-          <LogoutButton />
+          <div className="flex items-center gap-4">
+            <Link
+              to="/chat"
+              className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              Open Chat
+            </Link>
+            <LogoutButton />
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">

@@ -1,5 +1,7 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Phlox.API.Configuration;
+using Phlox.API.Data;
 using Phlox.API.Entities;
 using Qdrant.Client;
 using Qdrant.Client.Grpc;
@@ -12,6 +14,7 @@ public class VectorService : IVectorService
     private readonly IDocumentSlicerService _documentSlicer;
     private readonly IEmbeddingService _embeddingService;
     private readonly IHtmlContentCleanerService _htmlCleaner;
+    private readonly ApplicationDbContext _dbContext;
     private readonly ILogger<VectorService> _logger;
     private readonly QdrantOptions _qdrantOptions;
 
@@ -20,12 +23,14 @@ public class VectorService : IVectorService
         IDocumentSlicerService documentSlicer,
         IEmbeddingService embeddingService,
         IHtmlContentCleanerService htmlCleaner,
+        ApplicationDbContext dbContext,
         ILogger<VectorService> logger)
     {
         _qdrantOptions = qdrantOptions.Value;
         _documentSlicer = documentSlicer;
         _embeddingService = embeddingService;
         _htmlCleaner = htmlCleaner;
+        _dbContext = dbContext;
         _logger = logger;
 
         _qdrantClient = new QdrantClient(
@@ -150,6 +155,72 @@ public class VectorService : IVectorService
         }
 
         _logger.LogInformation("Search returned {ResultCount} results", results.Count);
+        return results;
+    }
+
+    public async Task<List<DocumentSearchResult>> SearchDocumentsAsync(
+        string phrase,
+        int documentLimit = 3,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Searching for top {Limit} documents matching: {Phrase}", documentLimit, phrase);
+
+        await EnsureCollectionExistsAsync(cancellationToken);
+
+        // Generate embedding for the search phrase
+        var queryEmbedding = _embeddingService.GenerateEmbedding(phrase);
+
+        // Search for more results to ensure we get enough unique documents
+        var searchLimit = documentLimit * 5;
+        var searchResults = await _qdrantClient.SearchAsync(
+            _qdrantOptions.CollectionName,
+            queryEmbedding,
+            limit: (ulong)searchLimit,
+            cancellationToken: cancellationToken);
+
+        // Group by document and get the best score for each
+        var documentGroups = searchResults
+            .Where(r => Guid.TryParse(r.Payload["document_id"].StringValue, out _))
+            .GroupBy(r => Guid.Parse(r.Payload["document_id"].StringValue))
+            .Select(g => new
+            {
+                DocumentId = g.Key,
+                BestScore = g.Max(r => r.Score),
+                Title = g.First().Payload["title"].StringValue,
+                RelevantParagraphs = g
+                    .OrderByDescending(r => r.Score)
+                    .Take(3)
+                    .Select(r => r.Payload["paragraph_content"].StringValue)
+                    .ToList()
+            })
+            .OrderByDescending(d => d.BestScore)
+            .Take(documentLimit)
+            .ToList();
+
+        if (documentGroups.Count == 0)
+        {
+            _logger.LogInformation("No documents found for query");
+            return [];
+        }
+
+        // Fetch full document content from database
+        var documentIds = documentGroups.Select(d => d.DocumentId).ToList();
+        var documents = await _dbContext.Documents
+            .Where(d => documentIds.Contains(d.Id))
+            .ToDictionaryAsync(d => d.Id, d => d.Content, cancellationToken);
+
+        var results = documentGroups
+            .Select(g => new DocumentSearchResult
+            {
+                DocumentId = g.DocumentId,
+                Title = g.Title,
+                Content = documents.GetValueOrDefault(g.DocumentId, string.Join("\n\n", g.RelevantParagraphs)),
+                BestScore = g.BestScore,
+                RelevantParagraphs = g.RelevantParagraphs
+            })
+            .ToList();
+
+        _logger.LogInformation("Search returned {ResultCount} unique documents", results.Count);
         return results;
     }
 

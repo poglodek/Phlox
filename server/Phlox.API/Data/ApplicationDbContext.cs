@@ -13,6 +13,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<UserEntity> Users => Set<UserEntity>();
     public DbSet<DocumentEntity> Documents => Set<DocumentEntity>();
     public DbSet<ParagraphEntity> Paragraphs => Set<ParagraphEntity>();
+    public DbSet<ChatEntity> Chats => Set<ChatEntity>();
+    public DbSet<MessageEntity> Messages => Set<MessageEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -75,6 +77,46 @@ public class ApplicationDbContext : DbContext
                 .IsRequired();
 
             entity.HasIndex(e => new { e.DocumentId, e.Index });
+        });
+
+        modelBuilder.Entity<ChatEntity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Title)
+                .HasMaxLength(500);
+
+            entity.Property(e => e.CreatedAt)
+                .IsRequired();
+
+            entity.HasOne(e => e.Owner)
+                .WithMany()
+                .HasForeignKey(e => e.OwnerId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(e => e.Messages)
+                .WithOne(m => m.Chat)
+                .HasForeignKey(m => m.ChatId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => e.OwnerId);
+        });
+
+        modelBuilder.Entity<MessageEntity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Role)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            entity.Property(e => e.Content)
+                .IsRequired();
+
+            entity.Property(e => e.CreatedAt)
+                .IsRequired();
+
+            entity.HasIndex(e => new { e.ChatId, e.CreatedAt });
         });
     }
 }

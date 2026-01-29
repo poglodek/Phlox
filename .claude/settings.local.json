@@ -13,7 +13,11 @@
       "Bash(dotnet new:*)",
       "Bash(dotnet add reference:*)",
       "Bash(del \"server\\\\Phlox.API.Tests\\\\UnitTest1.cs\")",
-      "Bash(dotnet test:*)"
+      "Bash(dotnet test:*)",
+      "Bash(tree:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run test:run:*)",
+      "Bash(npm run test:coverage:*)"
     ]
   }
 }

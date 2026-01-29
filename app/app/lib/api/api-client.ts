@@ -1,6 +1,7 @@
 import { apiBaseUrl } from "~/config/auth.config";
 import { getStoredToken } from "~/lib/auth/token-storage";
 import type { AuthResponse, LoginRequest, RegisterRequest, User } from "~/lib/auth/types";
+import type { Chat, CreateChatRequest, SendMessageRequest, StreamChunk } from "~/lib/chat/types";
 
 interface RequestOptions extends RequestInit {
   skipAuth?: boolean;
@@ -91,6 +92,80 @@ export const authApi = {
 
 export const userApi = {
   getCurrentUser: () => apiClient.get<User>("/api/user/me"),
+};
+
+export const chatApi = {
+  createChat: (data?: CreateChatRequest) =>
+    apiClient.post<Chat>("/api/chat", data),
+
+  getChat: (id: string) => apiClient.get<Chat>(`/api/chat/${id}`),
+
+  getChats: (page = 1, pageSize = 20) =>
+    apiClient.get<Chat[]>(`/api/chat?page=${page}&pageSize=${pageSize}`),
+
+  deleteChat: (id: string) => apiClient.delete<void>(`/api/chat/${id}`),
+
+  sendMessage: async function* (
+    chatId: string,
+    data: SendMessageRequest,
+    signal?: AbortSignal
+  ): AsyncGenerator<StreamChunk> {
+    const token = getStoredToken();
+
+    const response = await fetch(`${apiBaseUrl}/api/chat/${chatId}/messages`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(data),
+      signal,
+    });
+
+    if (!response.ok) {
+      throw {
+        message: `API error: ${response.status} ${response.statusText}`,
+        status: response.status,
+      };
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error("No response body");
+    }
+
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const data = line.slice(6).trim();
+            if (data === "[DONE]") {
+              return;
+            }
+            try {
+              const chunk: StreamChunk = JSON.parse(data);
+              yield chunk;
+            } catch {
+              // Ignore invalid JSON
+            }
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  },
 };
 
 export function isApiError(error: unknown): error is ApiError {

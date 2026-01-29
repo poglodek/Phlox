@@ -1,7 +1,16 @@
-﻿namespace Phlox.API.Entities;
+namespace Phlox.API.Entities;
 
 public class MessageEntity
 {
-    public string Role { get; set; }
-    public string Content { get; set; }
+    public Guid Id { get; set; }
+
+    public Guid ChatId { get; set; }
+
+    public ChatEntity Chat { get; set; } = null!;
+
+    public required string Role { get; set; }
+
+    public required string Content { get; set; }
+
+    public DateTime CreatedAt { get; set; }
 }

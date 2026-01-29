@@ -119,21 +119,6 @@ public class DocumentController : ControllerBase
         return NoContent();
     }
 
-    [HttpGet("search")]
-    public async Task<ActionResult<List<SearchResult>>> SearchDocuments(
-        [FromQuery] string query,
-        [FromQuery] int limit = 5,
-        CancellationToken cancellationToken = default)
-    {
-        if (string.IsNullOrWhiteSpace(query))
-        {
-            return BadRequest("Query cannot be empty");
-        }
-
-        var results = await _vectorService.SearchAsync(query, limit, cancellationToken);
-        return Ok(results);
-    }
-
     private static DocumentResponse MapToResponse(DocumentEntity document)
     {
         return new DocumentResponse
@@ -143,12 +128,14 @@ public class DocumentController : ControllerBase
             Content = document.Content,
             CreatedAt = document.CreatedAt,
             UpdatedAt = document.UpdatedAt,
-            Paragraphs = document.Paragraphs.Select(p => new ParagraphResponse
-            {
-                Id = p.Id,
-                Index = p.Index,
-                Content = p.Content
-            }).ToList()
+            Paragraphs = document.Paragraphs
+                .OrderBy(p => p.Index)
+                .Select(p => new ParagraphResponse
+                {
+                    Id = p.Id,
+                    Index = p.Index,
+                    Content = p.Content
+                }).ToList()
         };
     }
 }

@@ -27,6 +27,8 @@ builder.Services.AddSingleton<IDocumentSlicerService, DocumentSlicerService>();
 builder.Services.AddSingleton<IEmbeddingService, OpenAiEmbeddingService>();
 builder.Services.AddSingleton<IHtmlContentCleanerService, HtmlContentCleanerService>();
 builder.Services.AddScoped<IVectorService, VectorService>();
+builder.Services.AddSingleton<IChatCompletionService, OpenAiChatCompletionService>();
+builder.Services.AddScoped<IRagService, RagService>();
 
 var app = builder.Build();
 
