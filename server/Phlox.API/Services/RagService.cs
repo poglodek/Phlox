@@ -34,7 +34,7 @@ public class RagService : IRagService
         // Step 2: Search Qdrant for top 3 related documents
         var documents = await _vectorService.SearchDocumentsAsync(searchQuery, MaxSearchResults, cancellationToken);
 
-        if (documents.Count == 0)
+        if (documents.Count == 0 || documents.FirstOrDefault()!.BestScore < 0.35)
         {
             _logger.LogWarning("No relevant documents found for query: {Query}", searchQuery);
             yield return "There are no documents in the knowledge base that match your question. Please upload relevant documents first or try rephrasing your question.";

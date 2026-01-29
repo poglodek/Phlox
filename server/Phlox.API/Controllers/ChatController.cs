@@ -46,7 +46,7 @@ public class ChatController : ControllerBase
         {
             Id = Guid.NewGuid(),
             OwnerId = userId.Value,
-            Title = request?.Title,
+            Title = request?.Title ?? "New Chat",
             CreatedAt = DateTime.UtcNow
         };
 
